@@ -2,171 +2,153 @@
 
 ## Overview
 
-Traditional machine learning models predict outcomes such as churn or purchase probability.  
-However, prediction alone does not answer the business-critical question:
+Traditional predictive models estimate outcome probability:
 
-> Who will change their behavior because we intervene?
+P(Y=1 | X)
 
-This project builds a **causal uplift modeling system** to estimate heterogeneous treatment effects and optimize marketing targeting decisions for maximum profit.
+However, marketing optimization requires estimating incremental impact:
 
-Instead of predicting *who will buy*, this system estimates:
+E[Y(1) − Y(0) | X]
 
-\[
-\tau(x) = E[Y(1) - Y(0) \mid X=x]
-\]
+This project builds a causal uplift modeling system to identify customers whose behavior changes because of intervention.
 
-Where:
-
-- \( Y(1) \) = outcome if treated  
-- \( Y(0) \) = outcome if not treated  
-- \( \tau(x) \) = individual treatment effect  
-
-The goal is to target customers with **positive incremental impact**, not just high baseline probability.
+The objective is profit-maximizing policy design under treatment cost constraints.
 
 ---
 
-## Business Motivation
+# Business Problem
 
-In marketing campaigns:
+Sending promotions to all customers increases marketing cost without maximizing profit.
 
-- Sending offers to everyone increases cost.
-- Targeting based on predicted churn may waste incentives.
-- Some customers would convert regardless of treatment.
-- Some customers will not convert even with treatment.
+Key challenge:
 
-Correct targeting requires estimating **incremental lift**, not outcome probability.
+- Some customers will convert without treatment (sure buyers).
+- Some customers will not convert even with treatment (lost causes).
+- Only a subset are persuadable.
 
-This project simulates a realistic campaign environment and evaluates profit under different targeting strategies.
-
----
-
-## Project Objectives
-
-- Simulate confounded customer data with heterogeneous treatment effects  
-- Model treatment assignment using propensity scores  
-- Implement meta-learners (T-Learner, X-Learner)  
-- Evaluate uplift using Qini Curve and AUUC  
-- Compare naive vs uplift-based targeting  
-- Optimize campaign policy using profit simulation  
+Correct targeting requires estimating heterogeneous treatment effects.
 
 ---
 
-## System Architecture (Planned)
-# Profit-Optimized Customer Targeting using Uplift Modeling
+# Current Progress (Day 1 – Day 5)
 
-## Overview
+## 1. Synthetic Confounded Data Generation
 
-Traditional machine learning models predict outcomes such as churn or purchase probability.  
-However, prediction alone does not answer the business-critical question:
+Implemented a synthetic dataset with:
 
-> Who will change their behavior because we intervene?
+- Observed covariates (age, income, tenure, usage)
+- Hidden confounder (motivation)
+- Non-random treatment assignment
+- Heterogeneous treatment effects
+- Binary outcome simulation via logistic process
 
-This project builds a **causal uplift modeling system** to estimate heterogeneous treatment effects and optimize marketing targeting decisions for maximum profit.
-
-Instead of predicting *who will buy*, this system estimates:
-
-\[
-\tau(x) = E[Y(1) - Y(0) \mid X=x]
-\]
-
-Where:
-
-- \( Y(1) \) = outcome if treated  
-- \( Y(0) \) = outcome if not treated  
-- \( \tau(x) \) = individual treatment effect  
-
-The goal is to target customers with **positive incremental impact**, not just high baseline probability.
+Treatment assignment depends on observed + hidden variables, introducing realistic selection bias.
 
 ---
 
-## Business Motivation
+## 2. Selection Bias Demonstration
 
-In marketing campaigns:
+EDA shows:
 
-- Sending offers to everyone increases cost.
-- Targeting based on predicted churn may waste incentives.
-- Some customers would convert regardless of treatment.
-- Some customers will not convert even with treatment.
+- Treated and untreated groups differ in covariate distributions.
+- Naive outcome comparison is biased.
+- Treatment assignment is predictable from features.
 
-Correct targeting requires estimating **incremental lift**, not outcome probability.
-
-This project simulates a realistic campaign environment and evaluates profit under different targeting strategies.
+This establishes the need for propensity modeling.
 
 ---
 
-## Project Objectives
+## 3. Propensity Score Modeling
 
-- Simulate confounded customer data with heterogeneous treatment effects  
-- Model treatment assignment using propensity scores  
-- Implement meta-learners (T-Learner, X-Learner)  
-- Evaluate uplift using Qini Curve and AUUC  
-- Compare naive vs uplift-based targeting  
-- Optimize campaign policy using profit simulation  
+Implemented logistic regression to estimate:
 
----
+e(x) = P(T=1 | X)
 
-## System Architecture (Planned)
+Diagnostics include:
 
-Data Simulation
-↓
-Propensity Modeling
-↓
-Meta-Learners (T, X)
-↓
-Uplift Evaluation (Qini, AUUC)
-↓
-Economic Policy Simulation
+- Treatment prediction AUC
+- Propensity score overlap visualization
+- Discussion of positivity assumption
 
+This step prepares data for causal meta-learners.
 
 ---
 
-## Repository Structure
+## 4. Naive Outcome Prediction Baseline
 
-profit-uplift-modeling-system/
-│
-├── data/ # Simulated datasets
-├── notebooks/ # EDA and experimentation
-├── src/ # Core modeling modules
-├── reports/ # Results and analysis outputs
-│
-├── requirements.txt
-├── README.md
-└── .gitignore
+Trained a Random Forest to predict:
 
+P(Y=1 | X)
+
+Evaluated performance using ROC-AUC.
+
+Customers were ranked by predicted probability.
 
 ---
 
-## Technical Stack
+## 5. Profit Simulation Framework
+
+Defined campaign economics:
+
+- Cost per targeted customer: 10
+- Margin per conversion: 60
+- Targeting budget: top 30%
+
+Compared:
+
+- Random targeting profit
+- Naive predictive targeting profit
+
+Finding:
+
+High predictive probability does not guarantee high incremental profit.
+
+This establishes the baseline against which uplift models will be evaluated.
+
+---
+
+# Methodology Pipeline
+
+Data Simulation  
+→ Selection Bias Diagnosis  
+→ Propensity Modeling  
+→ Predictive Baseline  
+→ Profit Simulation  
+→ (Next) Uplift Meta-Learners  
+
+---
+
+# Next Steps
+
+- Implement T-Learner for treatment effect estimation  
+- Implement X-Learner for improved bias correction  
+- Construct uplift curves and Qini metric  
+- Optimize targeting policy using estimated uplift  
+
+---
+
+# Technical Stack
 
 - Python
 - NumPy
 - Pandas
 - Scikit-learn
-- XGBoost
+- Matplotlib / Seaborn
 - SciPy
-- SHAP (interpretability)
-- FastAPI (optional deployment layer)
+
+Deployment layer (planned):
+
+- FastAPI
 
 ---
 
-## Why This Project Matters
+# Positioning
 
-Most machine learning portfolios focus on:
+This project demonstrates:
 
-- Classification accuracy  
-- Forecasting error  
+- Causal inference reasoning
+- Treatment effect modeling
+- Policy optimization under cost constraints
+- Distinction between correlation and causation
 
-Few address:
-
-- Counterfactual reasoning  
-- Treatment heterogeneity  
-- Policy optimization under cost constraints  
-
-This project demonstrates decision-focused machine learning grounded in causal inference.
-
----
-
-## Status
-
-Day 1 — Project initialization and problem framing complete.  
-Next: synthetic confounded data generation.
+It is designed to simulate realistic business decision-making rather than pure classification performance.
