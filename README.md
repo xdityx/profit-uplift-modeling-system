@@ -120,7 +120,7 @@ Implemented ranking-based uplift evaluation:
 
 The Qini curve measures cumulative incremental gain as customers are targeted in descending uplift order.
 
-This allows formal evaluation of causal ranking quality beyond raw profit simulation.
+This allows formal evaluation of causal ranking quality beyond raw profit simulations.
 
 ---
 
