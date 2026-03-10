@@ -2,47 +2,47 @@
 
 ## Overview
 
-Predictive models estimate outcome probability:
+Traditional predictive models estimate:
 
 P(Y=1 | X)
 
-Marketing interventions require estimating incremental impact:
+However, marketing interventions require estimating incremental impact:
 
 E[Y(1) − Y(0) | X]
 
-This project builds a causal uplift modeling system to rank customers by expected treatment effect and optimize targeting under campaign cost constraints.
+This project implements a causal uplift modeling pipeline to identify customers whose behavior changes due to treatment and to optimize campaign targeting under cost constraints.
 
-The objective is profit-maximizing decision policy, not classification accuracy.
+The objective is **profit-maximizing policy design**, not classification accuracy.
 
 ---
 
 # Business Problem
 
-Marketing campaigns suffer from targeting inefficiency:
+Marketing campaigns often waste budget due to incorrect targeting:
 
-- Some customers convert regardless of intervention (sure buyers)
+- Some customers convert regardless of incentives (sure buyers)
 - Some customers never convert (lost causes)
 - Only a subset are persuadable
 
-Predictive models prioritize high-probability customers, not high incremental impact.
+Predictive models prioritize high-probability customers, but do not estimate incremental effect.
 
-Uplift modeling estimates heterogeneous treatment effects to isolate persuadable customers.
+Uplift modeling estimates heterogeneous treatment effects to isolate customers whose behavior is influenced by intervention.
 
 ---
 
-# Current Progress (Day 1 – Day 8)
+# Current Progress (Day 1 – Day 9)
 
 ## 1. Synthetic Confounded Data Generation
 
-Constructed a synthetic dataset with:
+Constructed a dataset with:
 
-- Observed covariates (age, income, tenure, usage)
+- Observed customer features
 - Hidden confounder
 - Non-random treatment assignment
 - Heterogeneous treatment effects
 - Logistic outcome generation
 
-This creates realistic selection bias and counterfactual structure.
+This introduces realistic selection bias and counterfactual structure.
 
 ---
 
@@ -50,8 +50,8 @@ This creates realistic selection bias and counterfactual structure.
 
 Exploratory analysis demonstrates:
 
-- Treated and control groups differ in feature distributions
-- Naive outcome comparison is biased
+- Feature distributions differ between treated and control groups
+- Naive outcome comparisons are biased
 - Treatment assignment is partially predictable from covariates
 
 ---
@@ -65,7 +65,7 @@ e(x) = P(T=1 | X)
 Diagnostics include:
 
 - ROC-AUC of treatment prediction
-- Propensity score overlap visualization
+- Propensity overlap visualization
 - Positivity assumption verification
 
 This step prepares data for causal meta-learners.
@@ -78,18 +78,15 @@ Trained Random Forest predicting:
 
 P(Y=1 | X)
 
-Campaign simulation parameters:
+Campaign parameters:
 
-- Cost per targeted customer: 10
-- Margin per conversion: 60
-- Targeting ratio: 30%
+Cost per targeted customer: 10  
+Revenue per successful conversion: 60  
+Targeting ratio: 30%
 
-Compared profit under:
+Profit comparison showed predictive targeting improves performance over random allocation.
 
-- Random targeting
-- Predictive targeting
-
-Observation: predictive probability does not measure incremental effect.
+However, this approach ignores treatment effect.
 
 ---
 
@@ -97,10 +94,10 @@ Observation: predictive probability does not measure incremental effect.
 
 Implemented T-Learner meta-algorithm.
 
-Two separate outcome models:
+Two separate outcome models trained on:
 
-- Model trained on treated customers
-- Model trained on control customers
+- Treated customers
+- Control customers
 
 Estimated uplift:
 
@@ -110,33 +107,53 @@ Customers ranked by estimated treatment effect.
 
 ---
 
-## 6. Uplift Evaluation (Day 7)
+## 6. Uplift Evaluation
 
-Implemented ranking-based causal evaluation:
+Implemented standard uplift evaluation metrics:
 
 - Uplift curve
 - Qini curve
-- Cumulative incremental response
 - AUUC (Area Under Uplift Curve)
 
-These metrics evaluate ranking quality of treatment effect predictions.
+These metrics evaluate the ranking quality of estimated treatment effects.
 
 ---
 
-## 7. X-Learner Implementation (Day 8)
+## 7. X-Learner Implementation
 
 Implemented X-Learner meta-algorithm.
 
 Steps:
 
-1. Train outcome models for treated and control groups
+1. Train outcome models
 2. Compute pseudo treatment effects
 3. Train regression models on pseudo effects
 4. Combine predictions using propensity weighting
 
-X-Learner improves treatment effect estimation when treatment groups are imbalanced.
+X-Learner reduces bias when treatment groups are imbalanced.
 
-Profit simulation repeated using X-Learner uplift ranking.
+---
+
+## 8. Policy Comparison (Day 9)
+
+Compared four targeting strategies under identical campaign constraints:
+
+| Strategy | Profit |
+|--------|--------|
+| Random Targeting | 32,040 |
+| Predictive Model | 150,000 |
+| T-Learner | 117,780 |
+| X-Learner | 77,640 |
+
+### Interpretation
+
+Predictive targeting performs best in this simulation because baseline conversion probability dominates treatment effect magnitude.
+
+Customers with high predicted probability are also likely to convert when targeted.
+
+This highlights an important property of uplift modeling:
+
+Uplift models provide the greatest advantage when treatment effect heterogeneity is large relative to baseline outcome probability.
 
 ---
 
@@ -149,7 +166,7 @@ Data Simulation
 → T-Learner  
 → Uplift Evaluation (Qini / AUUC)  
 → X-Learner  
-→ (Next) Model Comparison & Policy Optimization
+→ Policy Comparison
 
 ---
 
@@ -162,20 +179,16 @@ Scikit-learn
 Matplotlib / Seaborn  
 SciPy
 
-Planned extensions:
-
-- Policy evaluation framework
-- Treatment heterogeneity analysis
-- Lightweight API for scoring
-
 ---
 
-# Positioning
+# Project Outcome
 
 This project demonstrates:
 
 - Causal inference workflow
-- Treatment effect modeling
-- Ranking-based uplift evaluation
-- Decision optimization under economic constraints
-- Distinction between correlation and causation
+- Treatment effect estimation
+- Uplift meta-learning
+- Ranking-based causal evaluation
+- Profit-based policy optimization
+
+The system shows how causal reasoning changes targeting decisions compared to standard predictive modeling.
