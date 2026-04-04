@@ -14,6 +14,37 @@ This project implements a causal uplift modeling system to identify customers wh
 
 The objective is **profit-maximizing decision policy**, not classification accuracy.
 
+## Getting Started
+
+### Prerequisites
+
+- Python 3.12
+- pip
+
+### Installation
+
+```bash
+pip install -r requirements.txt
+```
+
+### Run Tests
+
+```bash
+python -m pytest tests/ -v
+```
+
+### Run MLflow Tracking
+
+```bash
+python -m src.train_and_log
+```
+
+### Docker
+
+```bash
+docker build -t uplift-tests . && docker run --rm uplift-tests
+```
+
 ---
 
 # Business Problem
