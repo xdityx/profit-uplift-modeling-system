@@ -20,3 +20,9 @@ def qini_curve(y, treatment, uplift_scores, n_bins=10):
     gains = cum_outcomes_treated - cum_outcomes_control * (cum_treated / (np.arange(len(t)) + 1))
 
     return gains
+
+
+def auuc(y, treatment, uplift_scores, n_bins=10):
+    """Compute the area under the Qini-style uplift curve."""
+    gains = qini_curve(y, treatment, uplift_scores, n_bins=n_bins)
+    return float(np.trapezoid(gains))
