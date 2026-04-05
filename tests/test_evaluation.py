@@ -7,7 +7,7 @@ from src.uplift_t_learner import TLearner
 
 def test_qini_curve_returns_expected_shape():
     df = generate_dataset(n_samples=100, seed=42)
-    X = df[["age", "income", "tenure", "usage"]]
+    X = df.drop(columns=["treatment", "outcome"])
 
     model = TLearner()
     model.fit(X, df["treatment"], df["outcome"])
@@ -24,7 +24,7 @@ def test_qini_curve_returns_expected_shape():
 
 def test_auuc_returns_positive_scalar():
     df = generate_dataset(n_samples=100, seed=42)
-    X = df[["age", "income", "tenure", "usage"]]
+    X = df.drop(columns=["treatment", "outcome"])
 
     model = TLearner()
     model.fit(X, df["treatment"], df["outcome"])

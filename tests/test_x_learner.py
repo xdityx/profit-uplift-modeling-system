@@ -7,7 +7,7 @@ from src.uplift_x_learner import XLearner
 
 def test_x_learner_predict_uplift_returns_valid_float_array():
     df = generate_dataset(n_samples=100, seed=42)
-    X = df[["age", "income", "tenure", "usage"]]
+    X = df.drop(columns=["treatment", "outcome"])
     treatment = df["treatment"]
     outcome = df["outcome"]
 

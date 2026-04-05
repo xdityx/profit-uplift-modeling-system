@@ -4,9 +4,14 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_auc_score
 
 
+def _get_feature_columns(df):
+    excluded = {"treatment", "outcome", "propensity_score"}
+    return [column for column in df.columns if column not in excluded]
+
+
 def train_propensity_model(df):
 
-    X = df[["age", "income", "tenure", "usage"]]
+    X = df[_get_feature_columns(df)]
     y = df["treatment"]
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -23,6 +28,6 @@ def train_propensity_model(df):
 
 
 def compute_propensity_scores(model, df):
-    X = df[["age", "income", "tenure", "usage"]]
+    X = df[_get_feature_columns(df)]
     df["propensity_score"] = model.predict_proba(X)[:, 1]
     return df

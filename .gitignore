@@ -1,3 +1,6 @@
 .__pycache__
 .aider*
+mlruns/data/hillstrom.csv 
+data/hillstrom.csv 
 mlruns/
+.pytest_cache/

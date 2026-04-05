@@ -9,17 +9,13 @@ from src.uplift_evaluation import auuc
 from src.uplift_t_learner import TLearner
 from src.uplift_x_learner import XLearner
 
-
-FEATURE_COLUMNS = ["age", "income", "tenure", "usage"]
-
-
-def train_and_log(sample_size=1000, seed=42):
+def train_and_log(sample_size=None, seed=42):
     project_root = Path(__file__).resolve().parent.parent
     tracking_dir = project_root / "mlruns"
     mlflow.set_tracking_uri(tracking_dir.resolve().as_uri())
 
     df = generate_dataset(n_samples=sample_size, seed=seed)
-    X = df[FEATURE_COLUMNS]
+    X = df.drop(columns=["treatment", "outcome"])
     treatment = df["treatment"]
     outcome = df["outcome"]
 
@@ -45,7 +41,7 @@ def train_and_log(sample_size=1000, seed=42):
     )
 
     params = {
-        "sample_size": sample_size,
+        "sample_size": int(len(df)),
         "treatment_ratio": float(treatment.mean()),
         "random_seed": seed,
     }
@@ -64,8 +60,13 @@ def train_and_log(sample_size=1000, seed=42):
 
 def main():
     parser = argparse.ArgumentParser(description="Train uplift models and log metrics to MLflow.")
-    parser.add_argument("--sample-size", type=int, default=1000, help="Number of synthetic samples to generate.")
-    parser.add_argument("--seed", type=int, default=42, help="Random seed for synthetic data generation.")
+    parser.add_argument(
+        "--sample-size",
+        type=int,
+        default=None,
+        help="Optional number of Hillstrom rows to sample before training.",
+    )
+    parser.add_argument("--seed", type=int, default=42, help="Random seed for dataset sampling.")
     args = parser.parse_args()
 
     params, metrics = train_and_log(sample_size=args.sample_size, seed=args.seed)
