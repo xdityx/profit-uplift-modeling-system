@@ -21,6 +21,8 @@ The objective is **profit-maximizing decision policy**, not classification accur
 - Python 3.12
 - pip
 
+Download `hillstrom.csv` from Kaggle and place it in the `data/` folder.
+
 ### Installation
 
 ```bash
@@ -44,6 +46,14 @@ python -m src.train_and_log
 ```bash
 docker build -t uplift-tests . && docker run --rm uplift-tests
 ```
+
+## Data Sources
+
+This project now uses the real Kevin Hillstrom MineThatData e-mail campaign dataset.
+
+- ~64,000 customers
+- Treatment from the e-mail campaign `segment` field (`No E-Mail`, `Mens E-Mail`, `Womens E-Mail`)
+- Conversion outcome from the binary `conversion` column
 
 ---
 
@@ -120,6 +130,8 @@ Diagnostics include:
 - ROC-AUC of treatment prediction
 - Propensity overlap visualization
 - Positivity assumption verification
+
+For the Hillstrom dataset, propensity AUC is expected to be around `0.5` because treatment assignment is close to random.
 
 This prepares the dataset for causal meta-learners.
 
