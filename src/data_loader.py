@@ -1,4 +1,13 @@
+"""
+Module: Load and prepare the Hillstrom uplift modeling dataset.
+
+This module handles dataset discovery, optional balanced sampling, and feature
+encoding for the Kevin Hillstrom e-mail campaign data. It is used throughout
+the project to produce treatment, outcome, and feature matrices for modeling.
+"""
+
 from pathlib import Path
+from typing import Optional
 
 import pandas as pd
 
@@ -17,7 +26,25 @@ CATEGORICAL_COLUMNS = ["zip_code", "channel", "history_segment"]
 REQUIRED_COLUMNS = set(RAW_FEATURE_COLUMNS + ["segment", "conversion"])
 
 
-def _sample_balanced_subset(df, n_samples, seed):
+def _sample_balanced_subset(
+    df: pd.DataFrame,
+    n_samples: int,
+    seed: int,
+) -> pd.DataFrame:
+    """
+    Sample a subset while preserving treatment and outcome coverage.
+
+    Args:
+        df: Full Hillstrom dataframe containing segment and conversion columns.
+        n_samples: Number of rows to sample for a smaller modeling dataset.
+        seed: Random seed used for deterministic sampling.
+
+    Returns:
+        A shuffled dataframe with approximately stratified treatment/outcome mix.
+
+    Raises:
+        ValueError: If the requested sample is smaller than the number of strata.
+    """
     treatment = (df["segment"] != "No E-Mail").astype(int)
     strata = treatment.astype(str) + "__" + df["conversion"].astype(str)
     group_counts = strata.value_counts().sort_index()
@@ -71,7 +98,19 @@ def _sample_balanced_subset(df, n_samples, seed):
     return sampled_df.sample(frac=1, random_state=seed).reset_index(drop=True)
 
 
-def find_hillstrom_csv(data_dir=None):
+def find_hillstrom_csv(data_dir: Optional[Path | str] = None) -> Path:
+    """
+    Locate the Hillstrom CSV file in the project data directory.
+
+    Args:
+        data_dir: Optional directory to search instead of the default `data/`.
+
+    Returns:
+        Path to the first CSV whose columns match the expected Hillstrom schema.
+
+    Raises:
+        FileNotFoundError: If no compatible CSV is found in the search directory.
+    """
     data_dir = Path(data_dir) if data_dir else Path(__file__).resolve().parent.parent / "data"
     csv_paths = sorted(data_dir.glob("*.csv"))
 
@@ -85,7 +124,22 @@ def find_hillstrom_csv(data_dir=None):
     )
 
 
-def load_hillstrom_dataframe(csv_path=None, n_samples=None, seed=42):
+def load_hillstrom_dataframe(
+    csv_path: Optional[Path | str] = None,
+    n_samples: Optional[int] = None,
+    seed: int = 42,
+) -> pd.DataFrame:
+    """
+    Load Hillstrom data and convert it into a modeling dataframe.
+
+    Args:
+        csv_path: Optional explicit path to the Hillstrom CSV file.
+        n_samples: Optional row count for a smaller sampled dataset.
+        seed: Random seed used when sampling rows.
+
+    Returns:
+        A dataframe with one-hot encoded features plus `treatment` and `outcome`.
+    """
     csv_path = Path(csv_path) if csv_path else find_hillstrom_csv()
     df = pd.read_csv(csv_path)
 
@@ -105,7 +159,23 @@ def load_hillstrom_dataframe(csv_path=None, n_samples=None, seed=42):
     return modeling_df
 
 
-def load_uplift_data(csv_path=None, n_samples=None, seed=42):
+def load_uplift_data(
+    csv_path: Optional[Path | str] = None,
+    n_samples: Optional[int] = None,
+    seed: int = 42,
+) -> tuple[pd.DataFrame, pd.Series, pd.Series]:
+    """
+    Return Hillstrom features, treatment, and outcome ready for learners.
+
+    Args:
+        csv_path: Optional explicit path to the Hillstrom CSV file.
+        n_samples: Optional row count for a smaller sampled dataset.
+        seed: Random seed used when sampling rows.
+
+    Returns:
+        A tuple of `(X, T, Y)` where `X` is encoded features and `T`, `Y`
+        are binary treatment and conversion series.
+    """
     modeling_df = load_hillstrom_dataframe(
         csv_path=csv_path,
         n_samples=n_samples,

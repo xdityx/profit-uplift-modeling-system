@@ -1,7 +1,17 @@
+"""
+Module: Train uplift models and log summary metrics to MLflow.
+
+This module orchestrates data loading, propensity modeling, meta-learner
+training, and metric logging for a local MLflow workflow. It serves as the
+project's simple experiment entrypoint for comparing uplift approaches.
+"""
+
 import argparse
 from pathlib import Path
+from typing import Optional
 
 import mlflow
+import pandas as pd
 
 from src.propensity import compute_propensity_scores, train_propensity_model
 from src.simulation import generate_dataset
@@ -9,12 +19,25 @@ from src.uplift_evaluation import auuc
 from src.uplift_t_learner import TLearner
 from src.uplift_x_learner import XLearner
 
-def train_and_log(sample_size=None, seed=42):
+def train_and_log(
+    sample_size: Optional[int] = None,
+    seed: int = 42,
+) -> tuple[dict[str, float | int], dict[str, float]]:
+    """
+    Train uplift models on Hillstrom data and log metrics to MLflow.
+
+    Args:
+        sample_size: Optional number of dataset rows to sample before training.
+        seed: Random seed used when subsampling the dataset.
+
+    Returns:
+        A tuple containing logged parameter values and summary metrics.
+    """
     project_root = Path(__file__).resolve().parent.parent
     tracking_dir = project_root / "mlruns"
     mlflow.set_tracking_uri(tracking_dir.resolve().as_uri())
 
-    df = generate_dataset(n_samples=sample_size, seed=seed)
+    df: pd.DataFrame = generate_dataset(n_samples=sample_size, seed=seed)
     X = df.drop(columns=["treatment", "outcome"])
     treatment = df["treatment"]
     outcome = df["outcome"]
@@ -58,7 +81,13 @@ def train_and_log(sample_size=None, seed=42):
     return params, metrics
 
 
-def main():
+def main() -> None:
+    """
+    Parse CLI arguments, train models, and print logged MLflow outputs.
+
+    Returns:
+        None.
+    """
     parser = argparse.ArgumentParser(description="Train uplift models and log metrics to MLflow.")
     parser.add_argument(
         "--sample-size",
