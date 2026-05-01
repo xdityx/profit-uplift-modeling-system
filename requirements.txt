@@ -10,3 +10,5 @@ fastapi
 uvicorn
 pytest
 mlflow
+streamlit
+plotly
