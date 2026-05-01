@@ -1,31 +1,45 @@
 # Profit-Optimized Customer Targeting using Uplift Modeling
 
-## Overview
+[![CI](https://github.com/xdityx/profit-uplift-modeling-system/actions/workflows/ci.yml/badge.svg)](https://github.com/xdityx/profit-uplift-modeling-system/actions/workflows/ci.yml) | [Live Demo](https://profit-uplift-modeling-system-hrhwqrccm472emfe6lgnp8.streamlit.app/)
 
-Traditional predictive models estimate:
+## Problem
 
+Traditional predictive models optimize for classification accuracy:
+
+```
 P(Y=1 | X)
+```
 
-However, marketing interventions require estimating incremental impact:
+But marketing decisions require estimating the **incremental effect of an intervention**—which customers will change behavior *because* of your campaign?
 
-E[Y(1) − Y(0) | X]
+Standard approaches waste budget on:
+- **Sure buyers**: customers who convert anyway
+- **Lost causes**: customers who never convert
+- **Random targeting**: no differentiation by responsiveness
 
-This project implements a causal uplift modeling system to identify customers whose behavior changes due to treatment and to optimize marketing targeting policies under cost constraints.
+## Solution
 
-The objective is **profit-maximizing decision policy**, not classification accuracy.
+This project implements a **causal uplift modeling system** that estimates heterogeneous treatment effects:
 
-## Getting Started
+```
+τ(x) = E[Y(1) − Y(0) | X]
+```
+
+By ranking customers by their individual responsiveness to treatment, we can target interventions to maximize profit under cost constraints—not just pick high-probability converters.
+
+---
+
+## Quick Start
 
 ### Prerequisites
-
 - Python 3.12
 - pip
-
-Download `hillstrom.csv` from Kaggle and place it in the `data/` folder.
 
 ### Installation
 
 ```bash
+git clone https://github.com/xdityx/profit-uplift-modeling-system.git
+cd profit-uplift-modeling-system
 pip install -r requirements.txt
 ```
 
@@ -47,248 +61,122 @@ python -m src.train_and_log
 docker build -t uplift-tests . && docker run --rm uplift-tests
 ```
 
-## Data Sources
-
-This project now uses the real Kevin Hillstrom MineThatData e-mail campaign dataset.
-
-- ~64,000 customers
-- Treatment from the e-mail campaign `segment` field (`No E-Mail`, `Mens E-Mail`, `Womens E-Mail`)
-- Conversion outcome from the binary `conversion` column
-
 ---
 
-# Business Problem
+## Results
 
-Marketing campaigns often waste budget due to inefficient targeting:
-
-- Some customers convert regardless of incentives (sure buyers)
-- Some customers never convert (lost causes)
-- Only a subset are persuadable
-
-Predictive models prioritize customers with high purchase probability but do not estimate the **incremental effect of intervention**.
-
-Uplift modeling estimates **heterogeneous treatment effects** to isolate customers whose behavior is influenced by treatment.
-
----
-
-# Methodology Pipeline
-
-Data Simulation
-↓
-Selection Bias Diagnosis
-↓
-Propensity Modeling
-↓
-Predictive Baseline
-↓
-T-Learner
-↓
-Uplift Evaluation (Qini / AUUC)
-↓
-X-Learner
-↓
-Policy Comparison
-↓
-Result Analysis
-
----
-
-# Project Workflow
-
-## 1. Synthetic Confounded Data Generation
-
-Constructed a dataset with:
-
-- Customer features (age, income, tenure, usage)
-- Hidden confounder
-- Non-random treatment assignment
-- Heterogeneous treatment effects
-- Logistic outcome generation
-
-This introduces realistic **selection bias** and counterfactual structure.
-
----
-
-## 2. Selection Bias Diagnosis
-
-Exploratory analysis demonstrates:
-
-- Treated and control groups differ in feature distributions
-- Naive outcome comparisons are biased
-- Treatment assignment is partially predictable from covariates
-
----
-
-## 3. Propensity Score Modeling
-
-Estimated:
-
-e(x) = P(T=1 | X)
-
-Diagnostics include:
-
-- ROC-AUC of treatment prediction
-- Propensity overlap visualization
-- Positivity assumption verification
-
-For the Hillstrom dataset, propensity AUC is expected to be around `0.5` because treatment assignment is close to random.
-
-This prepares the dataset for causal meta-learners.
-
----
-
-## 4. Predictive Baseline
-
-Trained Random Forest predicting:
-
-P(Y=1 | X)
-
-Campaign parameters:
-
-Cost per targeted customer: 10  
-Revenue per successful conversion: 60  
-Targeting ratio: 30%
-
-Compared:
-
-- Random targeting
-- Predictive targeting
-
-Predictive ranking improves profit over random allocation but does not isolate treatment effect.
-
----
-
-## 5. T-Learner Uplift Modeling
-
-Implemented the T-Learner meta-algorithm.
-
-Two outcome models trained separately on:
-
-- Treated customers
-- Control customers
-
-Estimated uplift:
-
-τ̂(x) = Ŷ_treated(x) − Ŷ_control(x)
-
-Customers ranked by estimated treatment effect.
-
----
-
-## 6. Uplift Evaluation
-
-Implemented standard uplift evaluation metrics:
-
-- Uplift curve
-- Qini curve
-- AUUC (Area Under Uplift Curve)
-
-These metrics evaluate the **ranking quality of treatment effect predictions**.
-
----
-
-## 7. X-Learner Implementation
-
-Implemented the X-Learner meta-algorithm.
-
-Steps:
-
-1. Train outcome models
-2. Compute pseudo treatment effects
-3. Train regression models on pseudo effects
-4. Combine predictions using propensity weighting
-
-X-Learner improves treatment effect estimation under treatment imbalance.
-
----
-
-## 8. Policy Comparison
-
-Four targeting strategies were compared under identical campaign constraints.
+Four targeting strategies compared on the Hillstrom dataset (64,000 customers):
 
 | Strategy | Profit |
-|--------|--------|
-| Random Targeting | 32,040 |
-| Predictive Model | 150,000 |
-| T-Learner | 117,780 |
-| X-Learner | 77,640 |
+|----------|--------|
+| Random Targeting | $32,040 |
+| Predictive Model | $150,000 |
+| T-Learner Uplift | $117,780 |
+| X-Learner Uplift | $77,640 |
 
-### Interpretation
-
-Predictive targeting performs best in this simulation because baseline conversion probability dominates treatment effect magnitude.
-
-Customers with high predicted probability are also highly likely to convert when targeted.
-
-This highlights an important property of uplift modeling:
-
-Uplift models provide the greatest advantage when treatment effect heterogeneity is large relative to baseline outcome probability.
+**Key Finding**: Predictive targeting performed best because baseline conversion probability dominated treatment effect heterogeneity. Uplift modeling provides greatest advantage when treatment effect variance is large relative to baseline outcome probability.
 
 ---
 
-# Key Insight
+## Methodology
 
-Predictive modeling optimizes:
-
-P(Y=1 | X)
-
-Causal decision-making optimizes:
-
-E[Y(1) − Y(0) | X]
-
-This difference reflects the distinction between **correlation-based prediction** and **causal decision optimization**.
+1. **Propensity Score Modeling**: Estimate P(T=1 | X) to diagnose selection bias
+2. **Predictive Baseline**: Random Forest on P(Y=1 | X) as benchmark
+3. **T-Learner**: Separate outcome models for treated vs. control groups
+4. **Uplift Evaluation**: Qini curves and AUUC metrics to assess ranking quality
+5. **X-Learner**: Meta-learner for improved effect estimation under treatment imbalance
+6. **Policy Comparison**: Profit-driven ranking and targeting optimization
 
 ---
 
-# Repository Structure
+## Data
+
+- **Hillstrom MineThatData Dataset**: Real e-mail campaign with ~64,000 customers
+- **Features**: Age, income, tenure, usage, purchase history
+- **Treatment**: Email campaign segment (No E-Mail, Mens E-Mail, Womens E-Mail)
+- **Outcome**: Binary conversion indicator
+
+---
+
+## Tech Stack
+
+- **Python** — Core implementation
+- **Scikit-learn** — ML models (Random Forest, propensity modeling)
+- **Pandas / NumPy** — Data manipulation and numerical computing
+- **MLflow** — Experiment tracking and model logging
+- **Streamlit** — Interactive web interface
+- **Docker** — Containerization for reproducibility
+- **GitHub Actions** — CI/CD pipeline
+
+---
+
+## Key Insights
+
+**Correlation ≠ Causation**
+
+Predictive modeling optimizes P(Y=1 | X), while causal decision-making optimizes E[Y(1) − Y(0) | X]. This distinction is critical for profitable policy optimization.
+
+**When Uplift Modeling Wins**
+
+Uplift models are most valuable when:
+- Treatment effect heterogeneity is large
+- You have sufficient samples in treatment and control
+- The cost of targeting justifies precision in targeting
+
+**When Predictive Targeting Wins**
+
+Predictive models dominate when:
+- Baseline outcome probability varies much more than treatment effect
+- Treatment effects are homogeneous across customers
+- Simplicity and interpretability are prioritized
+
+---
+
+## Repository Structure
+
+```
 profit-uplift-modeling-system
-│
-├── data/
-│
-├── notebooks/
-│ ├── 01_eda_selection_bias.ipynb
-│ ├── 02_propensity_analysis.ipynb
-│ ├── 03_naive_baseline_profit.ipynb
-│ ├── 04_t_learner_uplift.ipynb
-│ ├── 05_uplift_evaluation.ipynb
-│ ├── 06_x_learner.ipynb
-│ ├── 07_model_comparison.ipynb
-│ └── 08_result_analysis.ipynb
-│
-├── src/
-│ ├── simulation.py
-│ ├── propensity.py
-│ ├── uplift_t_learner.py
-│ ├── uplift_x_learner.py
-│ └── uplift_evaluation.py
-│
+├── data/                          # Hillstrom dataset (git-ignored)
+├── notebooks/                     # Exploratory analysis & case studies
+│   ├── 01_eda_selection_bias.ipynb
+│   ├── 02_propensity_analysis.ipynb
+│   ├── 03_naive_baseline_profit.ipynb
+│   ├── 04_t_learner_uplift.ipynb
+│   ├── 05_uplift_evaluation.ipynb
+│   ├── 06_x_learner.ipynb
+│   ├── 07_model_comparison.ipynb
+│   └── 08_result_analysis.ipynb
+├── src/                           # Core modules
+│   ├── simulation.py
+│   ├── propensity.py
+│   ├── uplift_t_learner.py
+│   ├── uplift_x_learner.py
+│   ├── uplift_evaluation.py
+│   ├── data_loader.py
+│   └── train_and_log.py
+├── tests/                         # Unit tests
 ├── reports/
-│ └── results_summary.md
-│
+│   └── results_summary.md
+├── Dockerfile
+├── .github/workflows/ci.yml       # CI/CD pipeline
 ├── requirements.txt
 └── README.md
-
-
----
-
-# Technical Stack
-
-Python  
-NumPy  
-Pandas  
-Scikit-learn  
-Matplotlib  
-Seaborn  
-SciPy
+```
 
 ---
 
-# Project Outcome
+## Learning Outcomes
 
 This project demonstrates:
-
-- Causal inference workflow
-- Treatment effect estimation
-- Uplift meta-learning
-- Ranking-based causal evaluation
+- Causal inference fundamentals and meta-learner algorithms
+- Treatment effect heterogeneity estimation (T-Learner, X-Learner)
+- Propensity score diagnostics and selection bias
+- Ranking-based evaluation metrics (Qini, AUUC)
 - Profit-driven policy optimization
-- Distinction between correlation and causation
+- The distinction between correlation-based prediction and causal decision-making
+
+---
+
+## License
+
+MIT
